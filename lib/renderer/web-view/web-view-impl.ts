@@ -44,7 +44,14 @@ export class WebViewImpl {
     // Create internal iframe element.
     this.internalElement = this.createInternalElement();
     const shadowRoot = this.webviewNode.attachShadow({ mode: 'open' });
-    shadowRoot.innerHTML = '<!DOCTYPE html><style type="text/css">:host { display: flex; }</style>';
+    // Assign to innerHTML using Trusted Types if available,
+    // for hosts that enforce Trusted Types.
+    const view = this.webviewNode.ownerDocument.defaultView;
+    const webviewHTML = '<!DOCTYPE html><style type="text/css">:host { display: flex; }</style>';
+    const ttPolicy = view?.trustedTypes?.createPolicy('electron', { createHTML: (s) => s });
+    const html = ttPolicy?.createHTML(webviewHTML) ?? webviewHTML;
+    shadowRoot.innerHTML = html as string;
+
     this.setupWebViewAttributes();
     this.viewInstanceId = getNextId();
     shadowRoot.appendChild(this.internalElement);
